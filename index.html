@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>六十四卦產生器 · 易經八卦</title>
+<meta name="theme-color" content="#c8a84b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="易經卦象">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --panel: #12121a;
+    --border: #2a2a3d;
+    --gold: #c8a84b;
+    --gold2: #f0d080;
+    --text: #e8e0cc;
+    --dim: #888070;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Serif TC', 'SimSun', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 20px;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, rgba(200,168,75,0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(100,80,200,0.05) 0%, transparent 50%);
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(200,168,75,0.4);
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-size: 0.8rem;
+    letter-spacing: 0.5em;
+    color: var(--dim);
+    margin-bottom: 40px;
+  }
+
+  .main-layout {
+    display: grid;
+    grid-template-columns: 280px 420px 280px;
+    gap: 30px;
+    align-items: start;
+    max-width: 1050px;
+    width: 100%;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .panel h2 {
+    font-size: 0.85rem;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* YAO controls */
+  .yao-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .yao-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .yao-label {
+    font-size: 0.75rem;
+    color: var(--dim);
+    width: 45px;
+    text-align: right;
+  }
+  .yao-select {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888070' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+  }
+  .yao-select:focus { outline: none; border-color: var(--gold); }
+  .yao-rand {
+    flex-shrink: 0;
+    width: 28px;
+    height: 34px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--dim);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .yao-rand:hover {
+    border-color: var(--gold);
+    color: var(--gold2);
+    background: rgba(200,168,75,0.1);
+    transform: rotate(60deg);
+  }
+
+  /* 少陽7 — 陽爻不變 */
+  .yao-select.val-shaoyang {
+    border-color: var(--gold);
+    color: var(--gold2);
+    background-color: rgba(200,168,75,0.08);
+  }
+  /* 老陽9 — 陽爻變爻（紅色強調） */
+  .yao-select.val-laoyang {
+    border-color: #e07040;
+    color: #f0a060;
+    background-color: rgba(220,100,40,0.12);
+  }
+  /* 少陰8 — 陰爻不變 */
+  .yao-select.val-shaoyin {
+    border-color: #7080c8;
+    color: #a0b0f0;
+    background-color: rgba(100,120,200,0.08);
+  }
+  /* 老陰6 — 陰爻變爻（紫色強調） */
+  .yao-select.val-laoyin {
+    border-color: #9060c0;
+    color: #c090e8;
+    background-color: rgba(140,80,200,0.12);
+  }
+
+  /* Color pickers */
+  .color-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .color-label {
+    font-size: 0.8rem;
+    color: var(--dim);
+    flex: 1;
+  }
+  .color-input-wrap {
+    position: relative;
+    width: 44px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .color-input-wrap input[type=color] {
+    position: absolute;
+    inset: -4px;
+    width: calc(100% + 8px);
+    height: calc(100% + 8px);
+    border: none;
+    cursor: pointer;
+  }
+
+  /* Preview canvas area */
+  .preview-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  #svg-preview {
+    width: 380px;
+    height: 380px;
+    filter: drop-shadow(0 0 30px rgba(200,168,75,0.2));
+  }
+
+  .hexagram-info {
+    text-align: center;
+  }
+  .hexagram-name {
+    font-size: 1.4rem;
+    color: var(--gold2);
+    letter-spacing: 0.2em;
+    margin-bottom: 4px;
+  }
+  .hexagram-num {
+    font-size: 0.75rem;
+    color: var(--dim);
+    letter-spacing: 0.3em;
+  }
+
+  /* Action buttons */
+  .action-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .btn {
+    width: 100%;
+    padding: 11px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+  .btn:hover {
+    border-color: var(--gold);
+    background: rgba(200,168,75,0.08);
+    color: var(--gold2);
+  }
+  .btn.primary {
+    background: rgba(200,168,75,0.12);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .btn.primary:hover {
+    background: rgba(200,168,75,0.25);
+    color: var(--gold2);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 14px 0;
+  }
+
+  /* Quick presets */
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .preset-btn {
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--dim);
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .preset-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  /* 64 hexagram grid */
+  .hex-grid {
+    display: grid;
+    grid-template-columns: repeat(8,1fr);
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .hex-cell {
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--dim);
+    font-size: 0.65rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .hex-cell:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(200,168,75,0.08);
+  }
+  .hex-cell.selected {
+    border-color: var(--gold);
+    background: rgba(200,168,75,0.18);
+    color: var(--gold2);
+  }
+
+  footer {
+    margin-top: 50px;
+    color: var(--dim);
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    opacity: 0.6;
+  }
+
+  @media (max-width: 900px) {
+    .main-layout {
+      grid-template-columns: 1fr;
+      max-width: 420px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>六十四卦產生器</h1>
+<p class="subtitle">I CHING · HEXAGRAM GENERATOR · 易經八卦</p>
+
+<div class="main-layout">
+
+  <!-- Left panel: Yao controls -->
+  <div class="panel">
+    <h2>爻 · 設定</h2>
+    <div class="yao-list" id="yao-controls"></div>
+
+    <hr class="divider">
+    <h2 style="margin-top:0">快速選卦</h2>
+    <div class="hex-grid" id="hex-grid"></div>
+  </div>
+
+  <!-- Center: SVG preview -->
+  <div class="preview-panel">
+    <svg id="svg-preview" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+    </svg>
+    <div class="hexagram-info">
+      <div class="hexagram-name" id="hex-name">—</div>
+      <div class="hexagram-num" id="hex-num">第 — 卦</div>
+    </div>
+  </div>
+
+  <!-- Right panel: Colors + Download -->
+  <div class="panel">
+    <h2>顏色 · 設定</h2>
+
+    <div class="color-row">
+      <span class="color-label">八邊形邊框</span>
+      <div class="color-input-wrap"><input type="color" id="col-border" value="#c8a84b"></div>
+    </div>
+    <div class="color-row">
+      <span class="color-label">八邊形填充</span>
+      <div class="color-input-wrap"><input type="color" id="col-fill" value="#0a0a1a"></div>
+    </div>
+    <div class="color-row">
+      <span class="color-label">陽爻顏色</span>
+      <div class="color-input-wrap"><input type="color" id="col-yang" value="#c8a84b"></div>
+    </div>
+    <div class="color-row">
+      <span class="color-label">陰爻顏色</span>
+      <div class="color-input-wrap"><input type="color" id="col-yin" value="#6080c8"></div>
+    </div>
+    <div class="color-row">
+      <span class="color-label">背景色</span>
+      <div class="color-input-wrap"><input type="color" id="col-bg" value="#0a0a1a"></div>
+    </div>
+
+    <hr class="divider">
+    <h2 style="margin-top:0">顏色預設</h2>
+    <div class="preset-grid">
+      <button class="preset-btn" onclick="applyPreset('gold')" title="金色">金</button>
+      <button class="preset-btn" onclick="applyPreset('jade')" title="翠玉">玉</button>
+      <button class="preset-btn" onclick="applyPreset('crimson')" title="朱紅">朱</button>
+      <button class="preset-btn" onclick="applyPreset('silver')" title="銀白">銀</button>
+      <button class="preset-btn" onclick="applyPreset('dark')" title="墨黑">墨</button>
+      <button class="preset-btn" onclick="applyPreset('ocean')" title="海藍">海</button>
+      <button class="preset-btn" onclick="applyPreset('earth')" title="土棕">土</button>
+      <button class="preset-btn" onclick="applyPreset('fire')" title="火焰">火</button>
+    </div>
+
+    <hr class="divider">
+    <h2 style="margin-top:0">下載</h2>
+    <div class="action-btns">
+      <button class="btn primary" onclick="downloadSVG()">下載 SVG</button>
+      <button class="btn" onclick="downloadPNG(192)">下載 PNG 192×192</button>
+      <button class="btn" onclick="downloadPNG(512)">下載 PNG 512×512</button>
+      <hr class="divider">
+      <button class="btn" onclick="randomHex()">🎲 隨機起卦</button>
+      <button class="btn" onclick="setAllYang()">全陽（乾）</button>
+      <button class="btn" onclick="setAllYin()">全陰（坤）</button>
+    </div>
+  </div>
+
+</div>
+
+<footer>六十四卦 · 陰陽之道 · HEXAGRAM ORACLE</footer>
+
+<script>
+// === 64 Hexagram Data ===
+const HEXAGRAMS = [
+  {num:1, name:'乾', binary:'111111'},
+  {num:2, name:'坤', binary:'000000'},
+  {num:3, name:'屯', binary:'100010'},
+  {num:4, name:'蒙', binary:'001010'},
+  {num:5, name:'需', binary:'111010'},
+  {num:6, name:'訟', binary:'010111'},
+  {num:7, name:'師', binary:'000010'},
+  {num:8, name:'比', binary:'010000'},
+  {num:9, name:'小畜', binary:'111011'},
+  {num:10, name:'履', binary:'110111'},
+  {num:11, name:'泰', binary:'111000'},
+  {num:12, name:'否', binary:'000111'},
+  {num:13, name:'同人', binary:'101111'},
+  {num:14, name:'大有', binary:'111101'},
+  {num:15, name:'謙', binary:'001000'},
+  {num:16, name:'豫', binary:'000100'},
+  {num:17, name:'隨', binary:'100110'},
+  {num:18, name:'蠱', binary:'011001'},
+  {num:19, name:'臨', binary:'110000'},
+  {num:20, name:'觀', binary:'000011'},
+  {num:21, name:'噬嗑', binary:'100101'},
+  {num:22, name:'賁', binary:'101001'},
+  {num:23, name:'剝', binary:'000001'},
+  {num:24, name:'復', binary:'100000'},
+  {num:25, name:'無妄', binary:'100111'},
+  {num:26, name:'大畜', binary:'111001'},
+  {num:27, name:'頤', binary:'100001'},
+  {num:28, name:'大過', binary:'011110'},
+  {num:29, name:'坎', binary:'010010'},
+  {num:30, name:'離', binary:'101101'},
+  {num:31, name:'咸', binary:'001110'},
+  {num:32, name:'恆', binary:'011100'},
+  {num:33, name:'遁', binary:'001111'},
+  {num:34, name:'大壯', binary:'111100'},
+  {num:35, name:'晉', binary:'000101'},
+  {num:36, name:'明夷', binary:'101000'},
+  {num:37, name:'家人', binary:'101011'},
+  {num:38, name:'睽', binary:'110101'},
+  {num:39, name:'蹇', binary:'010001'},
+  {num:40, name:'解', binary:'001010'},
+  {num:41, name:'損', binary:'110001'},
+  {num:42, name:'益', binary:'100011'},
+  {num:43, name:'夬', binary:'111110'},
+  {num:44, name:'姤', binary:'011111'},
+  {num:45, name:'萃', binary:'000110'},
+  {num:46, name:'升', binary:'011000'},
+  {num:47, name:'困', binary:'010110'},
+  {num:48, name:'井', binary:'011010'},
+  {num:49, name:'革', binary:'101110'},
+  {num:50, name:'鼎', binary:'011101'},
+  {num:51, name:'震', binary:'100100'},
+  {num:52, name:'艮', binary:'001001'},
+  {num:53, name:'漸', binary:'001011'},
+  {num:54, name:'歸妹', binary:'110100'},
+  {num:55, name:'豐', binary:'101100'},
+  {num:56, name:'旅', binary:'001101'},
+  {num:57, name:'巽', binary:'011011'},
+  {num:58, name:'兌', binary:'110110'},
+  {num:59, name:'渙', binary:'010011'},
+  {num:60, name:'節', binary:'110010'},
+  {num:61, name:'中孚', binary:'110011'},
+  {num:62, name:'小過', binary:'001100'},
+  {num:63, name:'既濟', binary:'101010'},
+  {num:64, name:'未濟', binary:'010101'}
+];
+
+// State
+let yaos = [7,7,7,7,7,7]; // 7=少陽 9=老陽 8=少陰 6=老陰; index 0=bottom yao
+
+// Color presets
+const PRESETS = {
+  gold:    {border:'#c8a84b', fill:'#0a0a1a', yang:'#f0d080', yin:'#6080c8', bg:'#0a0a1a'},
+  jade:    {border:'#50c880', fill:'#051510', yang:'#80f0a0', yin:'#c86050', bg:'#051510'},
+  crimson: {border:'#c84040', fill:'#1a0505', yang:'#f08080', yin:'#40c880', bg:'#1a0505'},
+  silver:  {border:'#aaaaaa', fill:'#f5f5f5', yang:'#888888', yin:'#6688cc', bg:'#f5f5f5'},
+  dark:    {border:'#404040', fill:'#050505', yang:'#808080', yin:'#404040', bg:'#050505'},
+  ocean:   {border:'#4080c8', fill:'#051020', yang:'#80c0f0', yin:'#c84080', bg:'#051020'},
+  earth:   {border:'#a07040', fill:'#100a05', yang:'#d0a060', yin:'#6080a0', bg:'#100a05'},
+  fire:    {border:'#e06020', fill:'#150500', yang:'#f0a040', yin:'#6050c0', bg:'#150500'},
+};
+
+function getColors() {
+  return {
+    border: document.getElementById('col-border').value,
+    fill:   document.getElementById('col-fill').value,
+    yang:   document.getElementById('col-yang').value,
+    yin:    document.getElementById('col-yin').value,
+    bg:     document.getElementById('col-bg').value,
+  };
+}
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  document.getElementById('col-border').value = p.border;
+  document.getElementById('col-fill').value = p.fill;
+  document.getElementById('col-yang').value = p.yang;
+  document.getElementById('col-yin').value = p.yin;
+  document.getElementById('col-bg').value = p.bg;
+  updateAll();
+}
+
+// Build SVG string
+function buildSVG(size) {
+  const S = size || 400;
+  const cx = S/2, cy = S/2;
+  const R = S * 0.44; // octagon circumradius
+  const colors = getColors();
+
+  // Octagon points
+  const pts = [];
+  for (let i=0;i<8;i++) {
+    const a = (Math.PI/8) + i*(Math.PI/4);
+    pts.push([cx + R*Math.cos(a), cy + R*Math.sin(a)]);
+  }
+  const octPath = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(2)+' '+p[1].toFixed(2)).join(' ')+'Z';
+
+  // Stroke width scales with size
+  const strokeW = S * 0.008;
+  const gapFactor = S / 400;
+
+  // Yao layout
+  const yaoW = R * 1.1;
+  const yaoH = S * 0.048;
+  const gapH = S * 0.022;
+  const totalH = 6*yaoH + 5*gapH;
+  const startY = cy - totalH/2;
+  const yinGap = yaoW * 0.12;
+
+  let yaosSVG = '';
+  for (let i=0;i<6;i++) {
+    const y = startY + (5-i)*(yaoH+gapH);
+    const v = yaos[i]; // 7=少陽 9=老陽 8=少陰 6=老陰
+    const isYang = (v === 7 || v === 9);
+    const isOld  = (v === 9 || v === 6);
+    // 變爻用特殊色，否則用正常陰陽色
+    const col = isOld
+      ? (isYang ? '#e07040' : '#9060c0')
+      : (isYang ? colors.yang : colors.yin);
+    const rx = 3*gapFactor;
+    const cy2 = y + yaoH/2; // vertical center of bar
+
+    if (isYang) {
+      // 實線
+      yaosSVG += `<rect x="${(cx - yaoW/2).toFixed(2)}" y="${y.toFixed(2)}" width="${yaoW.toFixed(2)}" height="${yaoH.toFixed(2)}" rx="${rx}" fill="${col}"/>`;
+      if (isOld) {
+        // 老陽：中心圓點
+        const dr = yaoH * 0.55;
+        yaosSVG += `<circle cx="${cx.toFixed(2)}" cy="${cy2.toFixed(2)}" r="${dr.toFixed(2)}" fill="${colors.bg}" opacity="0.85"/>`;
+        yaosSVG += `<circle cx="${cx.toFixed(2)}" cy="${cy2.toFixed(2)}" r="${(dr*0.5).toFixed(2)}" fill="${col}"/>`;
+      }
+    } else {
+      // 斷線
+      const hw = (yaoW/2 - yinGap/2);
+      yaosSVG += `<rect x="${(cx - yaoW/2).toFixed(2)}" y="${y.toFixed(2)}" width="${hw.toFixed(2)}" height="${yaoH.toFixed(2)}" rx="${rx}" fill="${col}"/>`;
+      yaosSVG += `<rect x="${(cx + yinGap/2).toFixed(2)}" y="${y.toFixed(2)}" width="${hw.toFixed(2)}" height="${yaoH.toFixed(2)}" rx="${rx}" fill="${col}"/>`;
+      if (isOld) {
+        // 老陰：中心 × 符號
+        const xs = yaoH * 0.55;
+        yaosSVG += `<line x1="${(cx-xs).toFixed(2)}" y1="${(cy2-xs).toFixed(2)}" x2="${(cx+xs).toFixed(2)}" y2="${(cy2+xs).toFixed(2)}" stroke="${col}" stroke-width="${(yaoH*0.25).toFixed(2)}" stroke-linecap="round"/>`;
+        yaosSVG += `<line x1="${(cx+xs).toFixed(2)}" y1="${(cy2-xs).toFixed(2)}" x2="${(cx-xs).toFixed(2)}" y2="${(cy2+xs).toFixed(2)}" stroke="${col}" stroke-width="${(yaoH*0.25).toFixed(2)}" stroke-linecap="round"/>`;
+      }
+    }
+  }
+
+  // Decorative ring
+  const ringR = R * 1.02;
+  const ringW = S * 0.004;
+
+  return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">
+  <rect width="${S}" height="${S}" fill="${colors.bg}"/>
+  <!-- Outer glow -->
+  <path d="${octPath}" fill="${colors.fill}" stroke="${colors.border}" stroke-width="${(strokeW*2.5).toFixed(2)}" filter="url(#glow)"/>
+  <!-- Inner frame -->
+  <path d="${octPath}" fill="none" stroke="${colors.border}" stroke-width="${strokeW.toFixed(2)}" opacity="0.4"/>
+  <!-- Decorative dots at corners -->
+  ${pts.map(p=>`<circle cx="${p[0].toFixed(2)}" cy="${p[1].toFixed(2)}" r="${(S*0.012).toFixed(2)}" fill="${colors.border}" opacity="0.7"/>`).join('')}
+  <!-- Yaos -->
+  ${yaosSVG}
+  <!-- Defs -->
+  <defs>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="${(S*0.015).toFixed(2)}" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+</svg>`;
+}
+
+function updateSVG() {
+  document.getElementById('svg-preview').outerHTML;
+  const container = document.getElementById('svg-preview').parentElement;
+  const svg = document.getElementById('svg-preview');
+  svg.innerHTML = '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = buildSVG(400);
+  const newSvg = tmp.querySelector('svg');
+  // Copy inner content
+  svg.innerHTML = newSvg.innerHTML;
+}
+
+function updateInfo() {
+  // Convert yaos (7/9/8/6) to binary string (1/0) for hexagram lookup
+  const bin = yaos.map(v => (v===7||v===9) ? '1' : '0').join('');
+  // Find matching hexagram
+  const match = HEXAGRAMS.find(h => h.binary === bin);
+  if (match) {
+    document.getElementById('hex-name').textContent = match.name;
+    document.getElementById('hex-num').textContent = `第 ${match.num} 卦`;
+    // Update grid selection
+    document.querySelectorAll('.hex-cell').forEach(el => {
+      el.classList.toggle('selected', parseInt(el.dataset.idx) === match.num - 1);
+    });
+  } else {
+    document.getElementById('hex-name').textContent = '自定義';
+    document.getElementById('hex-num').textContent = '第 — 卦';
+    document.querySelectorAll('.hex-cell').forEach(el => el.classList.remove('selected'));
+  }
+}
+
+function updateAll() {
+  updateSVG();
+  updateInfo();
+}
+
+// Build yao controls as dropdowns (4 options)
+function yaoClass(v) {
+  if (v===7) return 'val-shaoyang';
+  if (v===9) return 'val-laoyang';
+  if (v===8) return 'val-shaoyin';
+  return 'val-laoyin';
+}
+
+function buildYaoControls() {
+  const container = document.getElementById('yao-controls');
+  const labels = ['初爻','二爻','三爻','四爻','五爻','上爻'];
+  for (let i=5;i>=0;i--) {
+    const row = document.createElement('div');
+    row.className = 'yao-row';
+
+    const sel = document.createElement('select');
+    sel.className = 'yao-select ' + yaoClass(yaos[i]);
+    sel.dataset.idx = i;
+    sel.innerHTML = `
+      <option value="7" ${yaos[i]===7?'selected':''}>少陽 ７ ─────</option>
+      <option value="9" ${yaos[i]===9?'selected':''}>老陽 ９ ─○─</option>
+      <option value="8" ${yaos[i]===8?'selected':''}>少陰 ８ ── ──</option>
+      <option value="6" ${yaos[i]===6?'selected':''}>老陰 ６ ──×──</option>`;
+    sel.addEventListener('change', function() {
+      setYao(parseInt(this.dataset.idx), parseInt(this.value));
+    });
+
+    const randBtn = document.createElement('button');
+    randBtn.className = 'yao-rand';
+    randBtn.title = '隨機四象';
+    randBtn.textContent = '⚄';
+    randBtn.dataset.idx = i;
+    randBtn.addEventListener('click', function() {
+      // 傳統蓍草機率：少陽3/8、少陰3/8、老陽1/8、老陰1/8
+      const opts = [7,7,7, 8,8,8, 9, 6];
+      setYao(parseInt(this.dataset.idx), opts[Math.floor(Math.random()*8)]);
+    });
+
+    row.innerHTML = `<span class="yao-label">${labels[i]}</span>`;
+    row.appendChild(sel);
+    row.appendChild(randBtn);
+    container.appendChild(row);
+  }
+}
+
+// Sync all dropdowns from yaos[] array
+function syncYaoBtns() {
+  document.querySelectorAll('.yao-select').forEach(sel => {
+    const idx = parseInt(sel.dataset.idx);
+    sel.value = yaos[idx];
+    sel.className = 'yao-select ' + yaoClass(yaos[idx]);
+  });
+}
+
+function setYao(idx, val) {
+  yaos[idx] = val;
+  syncYaoBtns();
+  updateAll();
+}
+
+// Build hex grid
+function buildHexGrid() {
+  const grid = document.getElementById('hex-grid');
+  HEXAGRAMS.forEach((h,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'hex-cell';
+    btn.textContent = h.name;
+    btn.title = `${h.num}. ${h.name}`;
+    btn.dataset.idx = i;
+    btn.onclick = () => loadHexagram(h);
+    grid.appendChild(btn);
+  });
+}
+
+function loadHexagram(h) {
+  const bin = h.binary;
+  for (let i=0;i<6;i++) {
+    // Map 1→少陽(7), 0→少陰(8)
+    yaos[i] = parseInt(bin[i]) === 1 ? 7 : 8;
+  }
+  syncYaoBtns();
+  updateAll();
+}
+
+function randomHex() {
+  // 每爻依傳統蓍草機率隨機產生四象
+  const opts = [7,7,7, 8,8,8, 9, 6];
+  for (let i=0;i<6;i++) {
+    yaos[i] = opts[Math.floor(Math.random()*8)];
+  }
+  syncYaoBtns();
+  updateAll();
+}
+function setAllYang() { for(let i=0;i<6;i++) yaos[i]=7; syncYaoBtns(); updateAll(); }
+function setAllYin()  { for(let i=0;i<6;i++) yaos[i]=8; syncYaoBtns(); updateAll(); }
+
+function downloadSVG() {
+  const svgStr = buildSVG(400);
+  const blob = new Blob([svgStr], {type:'image/svg+xml'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const name = document.getElementById('hex-name').textContent;
+  a.download = `hexagram-${name}.svg`;
+  a.click();
+}
+
+function downloadPNG(size) {
+  const svgStr = buildSVG(size);
+  const img = new Image();
+  const blob = new Blob([svgStr], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const a = document.createElement('a');
+    const name = document.getElementById('hex-name').textContent;
+    a.download = `hexagram-${name}-${size}px.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+
+// Color change listeners
+['col-border','col-fill','col-yang','col-yin','col-bg'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateAll);
+});
+
+// Init
+buildYaoControls();
+buildHexGrid();
+updateAll();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/HG/sw.js')
+      .then(r => console.log('SW registered:', r.scope))
+      .catch(e => console.log('SW error:', e));
+  });
+}
+</script>
+</body>
+</html>

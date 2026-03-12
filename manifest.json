@@ -1,0 +1,26 @@
+{
+  "name": "六十四卦產生器",
+  "short_name": "易經卦象",
+  "description": "易經六十四卦產生器，支援四象（少陽、老陽、少陰、老陰）與變卦",
+  "start_url": "/HG/",
+  "scope": "/HG/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0f",
+  "theme_color": "#c8a84b",
+  "lang": "zh-TW",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
